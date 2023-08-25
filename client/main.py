@@ -5,15 +5,22 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkintertools as tkt
+import tkinter.messagebox as msgbox
 import os
 import sys
 import time
 from PIL import ImageTk,Image
 import threading
 import math
+import pyvpmodules.ui as ui
+import pyvpmodules.clipboard as clipboard
+import pyclip
 
-print(sys.argv[0])
+os.chdir(os.path.split(os.path.realpath(__file__))[0])
+print(os.getcwd())
 #os.chdir(sys.argv[0])
+
+pyvpclipboard=clipboard.Clipboard()
 
 root=tkt.Tk()
 root.withdraw()
@@ -146,6 +153,43 @@ def _resize(self, rate_x=None, rate_y=None):  # type: (float | None, float | Non
                 temp_x*rate_x, temp_y*rate_y, 1.2)
             self.itemconfigure(item, image=self._image[item][1])
 
+def launch(funcid):
+    '''根据传入的字符串找到并执行函数'''
+    funcid_splited=funcid.split('.')
+    match funcid_splited[0]:
+        case 'sidebar': #侧边栏按钮
+            match funcid_splited[1]:
+                case '0':
+                    change_sidept_page('file')
+                case '1':
+                    print('code')
+                case '2':
+                    print('function')
+                case '3':
+                    print('class')
+                case '4':
+                    print('modules')
+                case _:
+                    msgbox.showerror('错误','launch()没有根据给定的id找到相应的函数\n出错id层级: '+funcid_splited[1])
+        case 'sidebarbtm': #侧边栏底部按钮 顺序从下到上
+            match funcid_splited[1]:
+                case '0':
+                    print('more')
+                case '1':
+                    print('run')
+                case _:
+                    msgbox.showerror('错误','launch()没有根据给定的id找到相应的函数\n出错id层级: '+funcid_splited[1])
+        case _:
+            msgbox.showerror('错误','launch()没有根据给定的id找到相应的函数\n出错id层级: '+funcid_splited[0])
+
+def change_sidept_page(pagename):
+    global fileframe
+    sidept_pages={'file':fileframe}
+    global global_sidept_currpage
+    sidept_pages[global_sidept_currpage].pack_forget()
+    sidept_pages[pagename].pack(fill=tk.BOTH,expand=True)
+    sidept_pages[pagename].pack_propagate(False)
+
 
 root.deiconify()
 root.title('Python Visual Programmer')
@@ -163,13 +207,35 @@ sidebar.pack(side=tk.LEFT,fill=tk.Y)
 sidebar.pack_propagate(False)
 
 #print(sidebarimg)
+tmp_index=0
 for img in sidebarimg:
-    tk.Button(sidebar,image=img,bg='#1e1e1e',bd=0,command=lambda:print('hello')).pack(padx=2,pady=2,side=tk.TOP)
+    tk.Button(sidebar,image=img,bg='#1e1e1e',bd=0,command=lambda index=tmp_index:launch('sidebar.'+str(index))).pack(padx=2,pady=2,side=tk.TOP)
+    tmp_index+=1
 
+tmp_index=0
 for img in sidebarbtmimg:
-    tk.Button(sidebar,image=img,bg='#1e1e1e',bd=0,command=lambda:print('hello')).pack(padx=2,pady=2,side=tk.BOTTOM)
+    tk.Button(sidebar,image=img,bg='#1e1e1e',bd=0,command=lambda index=tmp_index:launch('sidebarbtm.'+str(index))).pack(padx=2,pady=2,side=tk.BOTTOM)
+    tmp_index+=1
 
 sidept=tk.Frame(root,bg='#ffffff',width=200)
+
+global_sidept_currpage='file'
+
+fileframe=tk.Frame(sidept,bg='#ffffff',width=200)
+tk.Label(fileframe,text='FILES',bg='#ffffff',anchor='w').pack(fill=tk.X)
+
+main_file_viewer=ui.FileTree(fileframe)
+main_file_viewer.left_frame.pack(fill=tk.BOTH,expand=True)
+main_file_viewer.open_dir()
+
+fileframe.pack_propagate(False)
+
+file_rightclick_menu=ui.Menu(root,{'剪切':lambda:pyvpclipboard.cut(main_file_viewer.tree.item(main_file_viewer.tree.focus())['values'][0],'file'),
+                                   '复制':lambda:pyvpclipboard.copy(main_file_viewer.tree.item(main_file_viewer.tree.focus())['values'][0],'file'),
+                                   '粘贴':lambda:pyvpclipboard.paste_at_file(main_file_viewer.get_focus_dir()),
+                                   '永久删除':lambda:print('del'),'重命名':lambda:print('rename')})
+main_file_viewer.tree.bind('<Button-3>',lambda event:file_rightclick_menu.show() if len(main_file_viewer.tree.focus())!=0 else None)
+
 sidept.pack(side=tk.LEFT,fill=tk.Y)
 
 status_color='#00aa00'
@@ -198,5 +264,7 @@ canvasresize_t=threading.Thread(target=lambda:resize(root,notframex=sidebar['wid
 canvasresize_t.start()
 
 tkt.Label(win, 50, 50, 250, 100, text='工作区（主区域）\n此处待完善')
+
+main_file_viewer.sync_t.start()
 
 root.mainloop()
