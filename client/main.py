@@ -86,23 +86,26 @@ startwin.destroy()
 
 def delete_tree():
     tree.delete(tree.get_children())
+
 ''' 设置默认搜索路径'''
 def open_dir(patha, fileboxtitle='设置目录'):
     open_path = filebox.askdirectory(title = fileboxtitle, initialdir = patha)
-    print("设置路径："+open_path)
     path = open_path
     # 删除所有目录
     delete_tree()
     load_tree("", path)
     return path
+
 ''' 获取文件后缀'''
 def file_extension(file):
     file_info = os.path.splitext(file)
     return file_info[-1]
+
 ''' 获取目录名称'''
 def dir_name(path):
     path_list = os.path.split(path)
     return path_list[-1]
+
 ''' 加载目录'''
 def load_tree(root, patha, opened=[]):
     is_open = False
@@ -128,6 +131,7 @@ def load_tree(root, patha, opened=[]):
                 tree.insert(root, END, text = " " + file, values = (file_path,), image = img)
     except Exception as e:
         print(e)
+
 '''获取当前焦点目录'''
 def get_focus_dir():
     sel=tree.item(tree.selection())['values'][0]
@@ -135,6 +139,7 @@ def get_focus_dir():
         return sel
     else:
         return os.path.split(sel)[0]
+    
 '''获取展开项'''
 def get_opened(parent=None,last_res=[]):
     if parent==None:
@@ -149,6 +154,7 @@ def get_opened(parent=None,last_res=[]):
             get_opened(parent=item)
     print(last_res)
     return last_res
+
 '''刷新'''
 def refresh():
     opened=get_opened()
@@ -160,7 +166,8 @@ def refresh():
         if tree.item(item)['values'][0]==selpath:
             print('focused on: '+str(tree.item(item)['values'][0]))
             tree.focus(item=item)
-    tree.bind("<<TreeviewSelect>>", lambda event:SelectCommand(tree.focus()))
+    tree.bind("<<TreeviewSelect>>", lambda _event:SelectCommand(tree.focus()))
+
 '''自动刷新（必须在多线程中使用）'''
 def auto_refresh():
     path_to_watch = path
@@ -196,10 +203,13 @@ code_text = Text(root, bg='black', fg='white', font=("JetBrains Mono", 11))
 def SelectCommand(item):
     file_path = tree.item(item)['values'][0]
     if file_path.endswith((".py", ".pyc", ".pyw")):
-        print("Python File")
-        pf = open(file_path)
+        pf = open(file_path, encoding="utf-8")
         data = pf.read()
-        code_text.insert(END, data)
+        if code_text.get('1.0', END) == '':
+            code_text.insert(END, data)
+        else:
+            code_text.delete('1.0', END)
+            code_text.insert(END, data)
 
 tree = ttk.Treeview(left_frame, show = "tree", selectmode = "browse")
 tree_y_scroll_bar = Scrollbar(left_frame, command = tree.yview, relief = SUNKEN, width = 2)
@@ -218,13 +228,13 @@ icon = {".php": php_img, ".py": python_img, ".pyc": python_img, ".png": image_im
 
 # 加载目录文件
 load_tree("", path)
-tree.bind("<<TreeviewSelect>>", lambda event:SelectCommand(tree.focus()))
+tree.bind("<<TreeviewSelect>>", lambda _event:SelectCommand(tree.focus()))
 
 os.chdir(currcwd)
 
 sync_t=threading.Thread(target=auto_refresh)
 
-class ui_Menu(tk.Toplevel):
+class PostMenu(tk.Toplevel):
     '''
     是个tttk的好苗子，等到这玩意加进tttk后就有可供参考的内容了
     唯一需要注意的是，content即菜单内容中不能有文字重复项，否则可能会有bug
@@ -260,7 +270,7 @@ class ui_Menu(tk.Toplevel):
         btn['bg']=newbg
         btn['fg']=newfg
     def getpos(self):
-        if self.pos=='cur':
+        if self.pos == 'cur':
             return (pyautogui.position()[0]+10,pyautogui.position()[1]+10)
         else:
             return self.pos
