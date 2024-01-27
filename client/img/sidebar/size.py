@@ -1,0 +1,11 @@
+from PIL import Image
+a = Image.open("client\\img\\fileicon\\folder.png").resize((22,22))
+aa = Image.open("client\\img\\fileicon\\python.png").resize((22,22))
+aaa = Image.open("client\\img\\fileicon\\php.png").resize((22,22))
+aaaa = Image.open("client\\img\\fileicon\\text_file.png").resize((22,22))
+aaaaa = Image.open("client\\img\\fileicon\\img.png").resize((22,22))
+a.save("client\\img\\fileicon\\folder.png")
+aa.save("client\\img\\fileicon\\python.png")
+aaa.save("client\\img\\fileicon\\php.png")
+aaaa.save("client\\img\\fileicon\\text_file.png")
+aaaaa.save("client\\img\\fileicon\\img.png")
